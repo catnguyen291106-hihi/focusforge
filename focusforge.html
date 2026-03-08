@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>FocusForge</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+font-family:system-ui;
+background:linear-gradient(135deg,#0f172a,#1e293b);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+min-height:100vh;
+}
+
+.container{
+width:500px;
+}
+
+.card{
+background:#1e293b;
+padding:30px;
+border-radius:20px;
+box-shadow:0 10px 30px rgba(0,0,0,0.5);
+text-align:center;
+margin-bottom:20px;
+}
+
+.timer{
+font-size:70px;
+margin:20px 0;
+}
+
+button{
+padding:10px 20px;
+border:none;
+border-radius:10px;
+margin:5px;
+cursor:pointer;
+}
+
+.start{background:#22c55e;color:white;}
+.pause{background:#f59e0b;color:white;}
+.reset{background:#ef4444;color:white;}
+
+input{
+width:70px;
+padding:5px;
+border-radius:5px;
+border:none;
+text-align:center;
+}
+
+.popup{
+position:fixed;
+top:20px;
+right:20px;
+background:#ef4444;
+padding:15px;
+border-radius:10px;
+display:none;
+}
+
+.failed-screen{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:#020617;
+display:flex;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+font-size:30px;
+z-index:999;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h1>FocusForge 📖</h1>
+
+<div id="timer" class="timer">25:00</div>
+
+<button class="start" onclick="startTimer()">Start</button>
+<button class="pause" onclick="pauseTimer()">Pause</button>
+<button class="reset" onclick="resetTimer()">Reset</button>
+
+<br><br>
+
+Study
+<input id="study" type="number" value="25">
+
+Break
+<input id="break" type="number" value="5">
+
+</div>
+
+<div class="card">
+
+<h2>Focus Stats 📊</h2>
+
+<canvas id="focusChart"></canvas>
+
+</div>
+
+</div>
+
+<div id="popup" class="popup"></div>
+
+<script>
+
+let timer=1500
+let interval
+let mode="study"
+
+let sessions=0
+let leaveCount=0
+
+function updateDisplay(){
+
+let m=Math.floor(timer/60)
+let s=timer%60
+
+document.getElementById("timer").innerText=
+m+":"+(s<10?"0":"")+s
+
+}
+
+function startTimer(){
+
+clearInterval(interval)
+
+interval=setInterval(()=>{
+
+timer--
+
+updateDisplay()
+
+if(timer<=0){
+
+if(mode==="study"){
+
+sessions++
+
+updateChart()
+
+showPopup("🎉 Hoàn thành phiên học!")
+
+let breakTime=document.getElementById("break").value
+timer=breakTime*60
+mode="break"
+
+}else{
+
+showPopup("📚 Quay lại học!")
+
+let studyTime=document.getElementById("study").value
+timer=studyTime*60
+mode="study"
+
+}
+
+}
+
+},1000)
+
+}
+
+function pauseTimer(){
+clearInterval(interval)
+}
+
+function resetTimer(){
+
+clearInterval(interval)
+
+let studyTime=document.getElementById("study").value
+timer=studyTime*60
+
+updateDisplay()
+
+}
+
+updateDisplay()
+
+function showPopup(text){
+
+let popup=document.getElementById("popup")
+
+popup.innerText=text
+popup.style.display="block"
+
+setTimeout(()=>{
+popup.style.display="none"
+},3000)
+
+}
+
+
+// chống xao nhãng
+
+document.addEventListener("visibilitychange",function(){
+
+if(document.hidden){
+
+leaveCount++
+
+showPopup("⚠️ Bạn đang rời khỏi tab học tập!")
+
+if(leaveCount>=3){
+
+clearInterval(interval)
+
+showFailedScreen()
+
+}
+
+}
+
+})
+
+function showFailedScreen(){
+
+let failed=document.createElement("div")
+
+failed.className="failed-screen"
+
+failed.innerHTML=`
+
+<h1>😡 Bạn đã không tập trung</h1>
+<p>Phiên học đã bị hủy</p>
+<button onclick="location.reload()">Bắt đầu lại</button>
+
+`
+
+document.body.appendChild(failed)
+
+}
+
+
+// biểu đồ
+
+let ctx=document.getElementById('focusChart').getContext('2d')
+
+let chart=new Chart(ctx,{
+type:'line',
+data:{
+labels:[],
+datasets:[{
+label:'Sessions',
+data:[],
+borderWidth:3
+}]
+}
+})
+
+function updateChart(){
+
+chart.data.labels.push("Session "+sessions)
+chart.data.datasets[0].data.push(sessions)
+
+chart.update()
+
+}
+
+</script>
+
+</body>
+</html>
